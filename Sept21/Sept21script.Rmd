@@ -1,0 +1,104 @@
+---
+title: "Sept21"
+author: "Annabelle McCarthy"
+date: "9/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Get the Data
+
+# Read in with tidytuesdayR package 
+# Install from CRAN via: install.packages("tidytuesdayR")
+# This loads the readme and all the datasets for the week of interest
+
+# Either ISO-8601 date or year/week works!
+
+tuesdata <- tidytuesdayR::tt_load('2021-09-14')
+# tuesdata <- tidytuesdayR::tt_load(2021, week = 38)
+
+billboard <- tuesdata$billboard
+
+audioFeatures <- tuesdata$audio_features
+
+# Or read in the data manually
+
+# billboard <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-09-14/billboard.csv')
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+head(billboard) # first 6 lines of data in the billboard df
+names(billboard) # names of all the columns
+```
+```{r}
+head(audioFeatures)
+names(audioFeatures)
+```
+
+```{r}
+ggplot(audioFeatures, aes(energy, fill = spotify_track_explicit))+
+  geom_histogram()
+
+ggplot(audioFeatures, aes(energy, fill = spotify_track_explicit))+
+  geom_histogram()+
+  facet_wrap(vars(spotify_track_explicit))
+```
+
+
+```{r}
+ggplot(audioFeatures, aes(spotify_track_explicit, energy))+
+  geom_col() 
+```
+
+In order to make a col chart that is... weighted (maybe this is the word I am looking for haha?), I need to make a plot of songs that are or aren't explicit, but the y-axis (energy) needs to be divided by the number of songs (I think)
+
+```{r}
+# number of songs that ARE NOT explicit
+audioFeatures %>% 
+  filter(spotify_track_explicit == FALSE) %>% 
+  count()
+
+# number of songs that ARE explicit
+audioFeatures %>% 
+  filter(spotify_track_explicit == TRUE) %>% 
+  count()
+```
+
+
+I need to make a new a column in the data set ("energy2"), which will be energy divided by the numbers of songs that are either explicit or not explicit (depending on what that particular song in that row is...). 
+
+I hope this makes sense so far... But basically, the easiest way I can think to do this would be to split this data set into two new data sets and then recombine them into one data set. 
+
+```{r}
+
+music <- audioFeatures %>% 
+  filter(spotify_track_explicit == FALSE) %>% # filtering the data set so that I am only looking at the NOT explicit songs
+  mutate(energy2 = energy/21449) # create a new column (called "energy2") which will go through every row of the data and take the value of energy and divide it by 21449 (the total number of NON explicit songs)
+
+music2 <- audioFeatures %>% 
+  filter(spotify_track_explicit == TRUE) %>% # filtering the data set so that I am only looking at the explicit songs
+  mutate(energy2 = energy/2948) # create a new column (called "energy2") which will go through every row of the data and take the value of energy and divide it by 2948 (the total number of explicit songs)
+
+music3 <- bind_rows(music, music2) #now, recombine the data into one table 
+
+ggplot(music3, aes(spotify_track_explicit, energy2))+
+  geom_col() #now plot the column chart :)
+```
+
+
+It would be interesting to add error bars to this column chart! 
+
+```{r}
+ggplot(audioFeatures, aes(spotify_track_explicit, energy))+
+  geom_boxplot()
+```
+
+
